@@ -1,0 +1,5 @@
+/Users/zen/Dropbox/DCS/Experiment/eulercuda_cython/cudpp/apps/cudpp_hash_testrig/CMakeFiles/cudpp_hash_testrig.dir
+/Users/zen/Dropbox/DCS/Experiment/eulercuda_cython/cudpp/apps/simpleCUDPP/CMakeFiles/simpleCUDPP.dir
+/Users/zen/Dropbox/DCS/Experiment/eulercuda_cython/cudpp/apps/cudpp_testrig/CMakeFiles/cudpp_testrig.dir
+/Users/zen/Dropbox/DCS/Experiment/eulercuda_cython/cudpp/src/cudpp/CMakeFiles/cudpp.dir
+/Users/zen/Dropbox/DCS/Experiment/eulercuda_cython/cudpp/src/cudpp_hash/CMakeFiles/cudpp_hash.dir
