@@ -4,7 +4,7 @@
 #include "graph.h"
 #include "gpuhash.h"
 
-extern "C"
+//extern "C"
 void constructDebruijnGraphDevice(	unsigned int * ecount,
 					KEY_PTR d_lmerKeys,		//in lmer keys
 					VALUE_PTR d_lmerValues,	//in lmer values
@@ -12,13 +12,14 @@ void constructDebruijnGraphDevice(	unsigned int * ecount,
 					KEY_PTR d_kmerKeys,		//in
 					unsigned long kmerCount,		//in  total kmers 
 					unsigned int l,					//in k
-					KEY_PTR d_TK,VALUE_PTR d_TV,
+					KEY_PTR d_TK,
+					VALUE_PTR d_TV,
 					unsigned int * d_bucketSeed,
 					unsigned int bucketCount,	
 					EulerVertex ** d_ev,			//out
 					unsigned int ** d_l,			//out
 					unsigned int ** d_e,			//out									
-					EulerEdge ** d_ee,			//out
+					EulerEdge ** d_ee			//out
 					);
 
 

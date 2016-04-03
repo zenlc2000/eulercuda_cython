@@ -4,8 +4,8 @@ from Cython.Distutils import build_ext
 from Cython.Build import cythonize
 
 ext = Extension("debriujn",
-                sources = ["debruijn.pyx", "encoder.pyx", "eulertour.pyx", "component.pyx", 
-                           "gpu_debruijn.cu", "gpu_encoder.cu", "gpu_eulertour.cu", "gpu_component.cu"],
+                sources = ["debruijn.pyx", "pyencoder.pyx", "pyeulertour.pyx", "component.pyx",
+                           "gpu_debruijn.cu", "encoder.cu", "eulertour.cu", "component.cu"],
                 language = "c"
                 )
 

@@ -57,8 +57,8 @@ except AttributeError:
     numpy_include = numpy.get_numpy_include()
 
 
-#                sources = ["debruijn.pyx", "encoder.pyx", "eulertour.pyx", "component.pyx", "stats.cpp", "utils.cpp", 
-#           "gpu_debruijn.cu", "gpu_encoder.cu", "gpu_eulertour.cu", "gpu_component.cu", "gpuhash.cu", "gpuhash2.cu"],
+#                sources = ["debruijn.pyx", "encoder.pyx", "pyeulertour.pyx", "component.pyx", "stats.cpp", "utils.cpp",
+#           "gpu_debruijn.cu", "gpu_encoder.cu", "eulertour.cu", "component.cu", "gpuhash.cu", "gpuhash2.cu"],
 
 
 ext = Extension('pydebruijn',
@@ -74,6 +74,33 @@ ext = Extension('pydebruijn',
                                     'nvcc': ['-arch=sm_30', '--ptxas-options=-v', '-c', '--compiler-options', "'-fPIC'"]},
                 include_dirs = [numpy_include, CUDA['include'], 'src'])
 
+encoder_ext = Extension('pyencoder',
+                sources=["pyencoder.pyx", "encoder.cu","utils.cu"],
+                library_dirs=[CUDA['lib64'], '../cudpp/lib'],
+                libraries=['cuda', 'cudart', 'stdc++', 'cudpp64d', 'cudpp_hash64d'],
+                language='c',
+                runtime_library_dirs=[CUDA['lib64'], '../cudpp/lib'],
+                # this syntax is specific to this build system
+                # we're only going to use certain compiler args with nvcc and not with gcc
+                # the implementation of this trick is in customize_compiler() below
+                extra_compile_args={'gcc': [],
+                                    'nvcc': ['-arch=sm_30', '--ptxas-options=-v', '-c', '--compiler-options',
+                                             "'-fPIC'"]},
+                include_dirs=[numpy_include, CUDA['include'], 'src'])
+
+eulertour_ext = Extension('pyeulertour',
+                sources=["pyeulertour.pyx", "eulertour.cu", "utils.cu","component.cu", "stats.cpp"],
+                library_dirs=[CUDA['lib64'], '../cudpp/lib'],
+                libraries=['cuda', 'cudart', 'stdc++', 'cudpp64d', 'cudpp_hash64d'],
+                language='c',
+                runtime_library_dirs=[CUDA['lib64'], '../cudpp/lib'],
+                # this syntax is specific to this build system
+                # we're only going to use certain compiler args with nvcc and not with gcc
+                # the implementation of this trick is in customize_compiler() below
+                extra_compile_args={'gcc': [],
+                                    'nvcc': ['-arch=sm_30', '--ptxas-options=-v', '-c', '--compiler-options',
+                                             "'-fPIC'"]},
+                include_dirs=[numpy_include, CUDA['include'], 'src'])
 
 
 def customize_compiler_for_nvcc(self):
@@ -120,12 +147,38 @@ class custom_build_ext(build_ext):
         customize_compiler_for_nvcc(self.compiler)
         build_ext.build_extensions(self)
 
-setup(name='pydebruijn',
+# setup(name='pydebruijn',
+#       # random metadata. there's more you can supply
+#       author='Mike Busch',
+#       version='0.1',
+#
+#       ext_modules = [ext],
+#
+#       # inject our custom trigger
+#       cmdclass={'build_ext': custom_build_ext},
+#
+#       # since the package has c code, the egg cannot be zipped
+#       zip_safe=False)
+
+# setup(name='pyencoder',
+#       # random metadata. there's more you can supply
+#       author='Mike Busch',
+#       version='0.1',
+#
+#       ext_modules=[encoder_ext],
+#
+#       # inject our custom trigger
+#       cmdclass={'build_ext': custom_build_ext},
+#
+#       # since the package has c code, the egg cannot be zipped
+#       zip_safe=False)
+
+setup(name='pyeulertour',
       # random metadata. there's more you can supply
       author='Mike Busch',
       version='0.1',
 
-      ext_modules = [ext],
+      ext_modules=[eulertour_ext],
 
       # inject our custom trigger
       cmdclass={'build_ext': custom_build_ext},

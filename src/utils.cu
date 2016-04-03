@@ -1,9 +1,8 @@
-// #include <cutil_inline.h>
 #include "/Volumes/Macintosh HD/Developer/NVIDIA/CUDA-7.5/samples/common/inc/helper_cuda.h" // lib above replaced w/this one at CUDA 5.0
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <stdarg.h>
-#include "graph.h"
+#include "Graph.h"
 #include "common.h"
  #include <execinfo.h>
 #define DEFAULT_BLOCK_SIZE 512

@@ -14,38 +14,34 @@ cdef extern from "common.h":
 cdef extern from "graph.h":
 
     ctypedef struct Vertex:
-        pass
- #       int vid
- #       int n1
- #       int n2
-        
-    
-    
+        int vid
+        int n1
+        int n2
+       
+   
+   
     ctypedef struct EulerVertex:
-        pass
-#        KEY_T	vid
-#        int  ep
-#        int  ecount
-#        int  lp
-#        int  lcount
-        
-    
+        KEY_T	vid
+        int  ep
+        int  ecount
+        int  lp
+        int  lcount
+       
+   
     ctypedef struct EulerEdge:
-        pass
-#        KEY_T eid
-#        int v1
-#        int v2
-#        int s
-#        int pad
-    
+        KEY_T eid
+        int v1
+        int v2
+        int s
+        int pad
+   
     ctypedef struct CircuitEdge:
-        pass
-#        int ceid
-#        int e1
-#        int e2
-#        int c1
-#        int c2
-
+        int ceid
+        int e1
+        int e2
+        int c1
+        int c2
+        
 cdef extern from "debruijn.h":
     void constructDebruijnGraphDevice(
             unsigned int *  ecount,
