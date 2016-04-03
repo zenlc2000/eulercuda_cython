@@ -62,16 +62,16 @@ except AttributeError:
 
 
 ext = Extension('pydebruijn',
-                sources = ["pydebruijn.pyx", "debruijn.cu"],  #, "gpuhash.cu", "gpuhash2.cu", "utils.cu"],
-                library_dirs=[CUDA['lib64']],
-                libraries=['cudart', 'stdc++'],
+                sources = ["pydebruijn.pyx", "debruijn.cu", "gpuhash.cu", "gpuhash2.cu", "utils.cu"],
+                library_dirs=[CUDA['lib64'] , '../cudpp/lib'],
+                libraries=['cuda', 'cudart', 'stdc++', 'cudpp64d', 'cudpp_hash64d'],
                 language='c',
-                runtime_library_dirs=[CUDA['lib64']],
+                runtime_library_dirs=[CUDA['lib64'] , '../cudpp/lib'],
                 # this syntax is specific to this build system
                 # we're only going to use certain compiler args with nvcc and not with gcc
                 # the implementation of this trick is in customize_compiler() below
                 extra_compile_args={'gcc': [],
-                                    'nvcc': ['-arch=sm_20', '--ptxas-options=-v', '-c', '--compiler-options', "'-fPIC'"]},
+                                    'nvcc': ['-arch=sm_30', '--ptxas-options=-v', '-c', '--compiler-options', "'-fPIC'"]},
                 include_dirs = [numpy_include, CUDA['include'], 'src'])
 
 
