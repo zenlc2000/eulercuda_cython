@@ -299,8 +299,9 @@ def constructDebruijnGraph(readBuffer, readCount, readLength, lmerLength, evList
     d_lmerValues = []
     # from gpuhash & gpuhash2
 
-    # Need to return these back out...
-    # d_TK,  d_TV, tableLength,  d_bucketSize,  bucketCount)
+
+    # TODO: return d_TK,  d_TV, tableLength,  d_bucketSize,  bucketCount)
+    # TODO: Test pygpuhash
     pygpuhash.create_hash_table(d_kmerKeys, d_kmerValues, kmerCount)
 
 #    constructDebruijnGraphDevice(d_lmerKeys, d_lmerValues, lmerCount,
@@ -309,7 +310,7 @@ def constructDebruijnGraph(readBuffer, readCount, readLength, lmerLength, evList
 
 
 
-    def findEulerTour(evList, eeList, levEdgeList, entEdgeList, edgeCountList, vertexCountLsit, lmerLength, outfile):
+def findEulerTour(evList, eeList, levEdgeList, entEdgeList, edgeCountList, vertexCountLsit, lmerLength, outfile):
     pass
 
 
