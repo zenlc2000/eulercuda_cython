@@ -5,7 +5,7 @@ import pygpuhash
 #import pydebruijn
 import numpy as np
 from numba import cuda
-
+import cython
 
 def parse_fastq(filename):
     """
@@ -266,8 +266,7 @@ def constructDebruijnGraph(readBuffer, readCount, readLength, lmerLength, evList
     """
     h_lmerKeys = []
     h_lmerValues = []
-    d_lmerKeys = []
-    d_lmerValues = []
+
     lmerCount = 0
     h_kmerKeys = []
     h_kmerValues = []
@@ -296,12 +295,21 @@ def constructDebruijnGraph(readBuffer, readCount, readLength, lmerLength, evList
     # setStatItem(NM_KMER_COUNT, kmerCount);
 
     # lots of memory movement to Device
-
+    d_lmerKeys = np.empty(lmerCount * cython.sizeof(cython.unsignedlonglong))
+    d_lmerValues = []
     # from gpuhash & gpuhash2
-    pygpuhash.create_hash_table(d_kmerKeys, d_kmerValues, kmerCount, &d_TK, & d_TV,& tableLength, & d_bucketSize, & bucketCount)
+
+    # Need to return these back out...
+    # d_TK,  d_TV, tableLength,  d_bucketSize,  bucketCount)
+    pygpuhash.create_hash_table(d_kmerKeys, d_kmerValues, kmerCount)
+
+#    constructDebruijnGraphDevice(d_lmerKeys, d_lmerValues, lmerCount,
+#        d_kmerKeys, kmerCount, l, d_TK, d_TV, d_bucketSize, bucketCount,
+#        & d_ev, & d_levEdge, & d_entEdge, & d_ee, edgeCount);
 
 
-def findEulerTour(evList, eeList, levEdgeList, entEdgeList, edgeCountList, vertexCountLsit, lmerLength, outfile):
+
+    def findEulerTour(evList, eeList, levEdgeList, entEdgeList, edgeCountList, vertexCountLsit, lmerLength, outfile):
     pass
 
 

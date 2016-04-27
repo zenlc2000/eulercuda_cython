@@ -2,14 +2,11 @@
 
 
 
-//#include <cutil_inline.h>
-#include "/Volumes/Macintosh HD/Developer/NVIDIA/CUDA-7.5/samples/common/inc/helper_cuda.h" // lib above replaced w/this one at CUDA 5.0
-#include "/Volumes/Macintosh HD/Developer/NVIDIA/CUDA-7.5/samples/common/inc/helper_timer.h"
-#include "/Volumes/Macintosh HD/Developer/NVIDIA/CUDA-7.5/samples/common/inc/helper_functions.h"
-
+#include "cutil_inline.h"
 #include "cudpp.h"
 #include "utils.h"
 #include "gpuhash_device.h"
+#include "gpuhash_kernel.cu"
 #include <time.h>
 
 
@@ -20,89 +17,8 @@
 #endif
 #define DEBUG_CALL(x) DEBUG_GPUHASH_CU(x)
 
-/*
-__global__ void init(unsigned int * offset, unsigned int length,unsigned int* count,unsigned int bucketCount){
-	unsigned int tid=(blockDim.x*blockDim.y * gridDim.x*blockIdx.y) + (blockDim.x*blockDim.y*blockIdx.x)+(blockDim.x*threadIdx.y)+threadIdx.x;
-	unsigned int key=keys[tid];
-	unsigned int value=value[tid];
 
-	unsigned int bucket=hash_h(key,c0,c1,bucketCount);
-	offset[tid]=0;
-}
-*/
-__global__ void phase1(	KEY_PTR  keys, 
-			unsigned int * offset, 
-			unsigned int length,
-			unsigned int* count,
-			unsigned int bucketCount){
-
-	unsigned int tid=(blockDim.x*blockDim.y * gridDim.x*blockIdx.y) + (blockDim.x*blockDim.y*blockIdx.x)+(blockDim.x*threadIdx.y)+threadIdx.x;
-	if(tid<length){
-		KEY_T key=keys[tid];
-		unsigned int bucket=hash_h(key,bucketCount);	
-		offset[tid]=atomicInc (count+bucket,MAX_INT);
-		
-	}
-	__syncthreads();
-}
-__global__ void copyToBucket(	KEY_PTR keys,
-				VALUE_PTR values,
-				unsigned int * offset,
-				unsigned int length,
-				unsigned int* start,
-				unsigned int bucketCount,
-				KEY_PTR  bufferK,
-				VALUE_PTR bufferV){
-
-	unsigned tid=(blockDim.x*blockDim.y * gridDim.x*blockIdx.y) + (blockDim.x*blockDim.y*blockIdx.x)+(blockDim.x*threadIdx.y)+threadIdx.x;;
-
-	if(tid<length){
-		KEY_T key =keys[tid];
-		unsigned int bucket=hash_h(key,bucketCount);
-		VALUE_T value=values[tid];
-		unsigned int index=start[bucket]+offset[tid];
-		//index=(index * BUCKET_ITEM_SIZE);
-		bufferK[index]=key;
-		bufferV[index]=value;
-		//*(BUFFER_ITEM_KEY_PTR(buffer,index))=key;
-		//*(BUFFER_ITEM_VALUE_PTR(buffer,index))=value;
-	}
-}
-__global__ void bucketSort(KEY_PTR   bufferK,VALUE_PTR bufferV, unsigned int * start,unsigned int * bucketSize,unsigned int bucketCount,KEY_PTR TK,VALUE_PTR TV){
-
-
-		__shared__ KEY_T keys[MAX_BUCKET_ITEM];
-		unsigned int keyCount[MAX_BUCKET_ITEM/32];
-		//unsigned int keyCount=0;
-		unsigned int blockOffset=start[blockIdx.x];
-		unsigned int size=bucketSize[blockIdx.x];
-
-		unsigned int chunks=size>>5;
-		chunks= (chunks<<5==size)?chunks:chunks+1;
-		for(unsigned int j=0;j<chunks;j++){
-			if((j<<5)+threadIdx.x<size)
-				keys[(j<<5)+threadIdx.x]=bufferK[blockOffset+(j<<5)+threadIdx.x];//
-		}
-
-		__syncthreads();
-		for(unsigned int j=0;j<chunks;j++){
-			if((j<<5)+threadIdx.x<size){
-				keyCount[j]=0;
-				for(int i=0; i<size; i++){
-					//if( keys[(i<<5)+threadIdx.x]> keys[i] ) keyCount++;
-					keyCount[j]=( keys[(j<<5)+threadIdx.x]> keys[i] )?keyCount[j]+1:keyCount[j];
-				}
-			}
-		}
-			__syncthreads();
-		for(unsigned int j=0;j<chunks;j++){
-			if((j<<5)+threadIdx.x<size){
-				TK[GET_KEY_INDEX(blockIdx.x,keyCount[j])]=keys[(j<<5)+threadIdx.x];
-				TV[GET_VALUE_INDEX(blockIdx.x,keyCount[j])]=bufferV[blockOffset+(j<<5)+threadIdx.x];
-			}
-		}
-}
-void bucketSortHost(KEY_PTR   bufferK,VALUE_PTR bufferV, unsigned int * start,unsigned int * bucketSize,unsigned int bucketCount,KEY_PTR TK,VALUE_PTR TV,unsigned int bid,unsigned int tid){ 
+void bucketSortHost(KEY_PTR   bufferK,VALUE_PTR bufferV, unsigned int * start,unsigned int * bucketSize,unsigned int bucketCount,KEY_PTR TK,VALUE_PTR TV,unsigned int bid,unsigned int tid){
 
 		KEY_T keys[512];
 		unsigned int keyCount=0;
@@ -123,10 +39,8 @@ void bucketSortHost(KEY_PTR   bufferK,VALUE_PTR bufferV, unsigned int * start,un
 			TV[GET_VALUE_INDEX(bid,keyCount)]=bufferV[blockOffset+tid];
 		}
 }
-/*unsigned int  host_hash_h(KEY_T key, unsigned int bucketCount){
-	return ((C0+C1*key)% LARGE_PRIME )% bucketCount;
-}
-*/
+
+
 void verifyBuffer(KEY_PTR d_keys,VALUE_PTR d_values,unsigned int length, KEY_PTR d_bufferK, VALUE_PTR d_bufferV, unsigned int * d_bucketOffset,unsigned int * d_bucketSize, unsigned int bucketCount){
 
 	KEY_PTR h_keys;
@@ -144,12 +58,12 @@ void verifyBuffer(KEY_PTR d_keys,VALUE_PTR d_values,unsigned int length, KEY_PTR
 	h_bucketOffset =(unsigned int *) malloc( bucketCount * sizeof(unsigned int));
 	h_bucketSize = (unsigned int * ) malloc ( bucketCount * sizeof(unsigned int));	
 	
-	checkCudaErrors( cudaMemcpy(h_keys, d_keys, length * (KEY_SIZE), cudaMemcpyDeviceToHost));
-	checkCudaErrors( cudaMemcpy(h_values, d_values, length * (VALUE_SIZE), cudaMemcpyDeviceToHost));
-	checkCudaErrors( cudaMemcpy(h_bufferK, d_bufferK, length * (KEY_SIZE), cudaMemcpyDeviceToHost));
-	checkCudaErrors( cudaMemcpy(h_bufferV, d_bufferV, length * (VALUE_SIZE), cudaMemcpyDeviceToHost));
-	checkCudaErrors( cudaMemcpy(h_bucketOffset, d_bucketOffset, bucketCount* (sizeof(unsigned int)), cudaMemcpyDeviceToHost));
-	checkCudaErrors( cudaMemcpy(h_bucketSize, d_bucketSize, bucketCount * (sizeof(unsigned int)), cudaMemcpyDeviceToHost));
+	cutilSafeCall( cudaMemcpy(h_keys, d_keys, length * (KEY_SIZE), cudaMemcpyDeviceToHost));
+	cutilSafeCall( cudaMemcpy(h_values, d_values, length * (VALUE_SIZE), cudaMemcpyDeviceToHost));
+	cutilSafeCall( cudaMemcpy(h_bufferK, d_bufferK, length * (KEY_SIZE), cudaMemcpyDeviceToHost));
+	cutilSafeCall( cudaMemcpy(h_bufferV, d_bufferV, length * (VALUE_SIZE), cudaMemcpyDeviceToHost));
+	cutilSafeCall( cudaMemcpy(h_bucketOffset, d_bucketOffset, bucketCount* (sizeof(unsigned int)), cudaMemcpyDeviceToHost));
+	cutilSafeCall( cudaMemcpy(h_bucketSize, d_bucketSize, bucketCount * (sizeof(unsigned int)), cudaMemcpyDeviceToHost));
 
 	unsigned int found=0;
 	unsigned int notfound=0;
@@ -246,11 +160,11 @@ void verifyHashTable(KEY_PTR  d_keys, VALUE_PTR d_values, unsigned int length, K
 	h_bucketSize= (unsigned int *) malloc ( bucketCount * sizeof(unsigned int));
 	bCount= (unsigned int * ) malloc( bucketCount *sizeof(unsigned int));
 	
-	checkCudaErrors( cudaMemcpy(h_keys, d_keys, length * (KEY_SIZE), cudaMemcpyDeviceToHost));
-	checkCudaErrors( cudaMemcpy(h_values, d_values, length * (VALUE_SIZE), cudaMemcpyDeviceToHost) );
-	checkCudaErrors( cudaMemcpy(h_TK, d_TK,  BUCKET_KEY_SIZE*bucketCount, cudaMemcpyDeviceToHost) );
-	checkCudaErrors( cudaMemcpy(h_TV, d_TV,  BUCKET_VALUE_SIZE*bucketCount, cudaMemcpyDeviceToHost) );
-	checkCudaErrors( cudaMemcpy(h_bucketSize, d_bucketSize, bucketCount * sizeof(unsigned int), cudaMemcpyDeviceToHost) );
+	cutilSafeCall( cudaMemcpy(h_keys, d_keys, length * (KEY_SIZE), cudaMemcpyDeviceToHost));
+	cutilSafeCall( cudaMemcpy(h_values, d_values, length * (VALUE_SIZE), cudaMemcpyDeviceToHost) );
+	cutilSafeCall( cudaMemcpy(h_TK, d_TK,  BUCKET_KEY_SIZE*bucketCount, cudaMemcpyDeviceToHost) );
+	cutilSafeCall( cudaMemcpy(h_TV, d_TV,  BUCKET_VALUE_SIZE*bucketCount, cudaMemcpyDeviceToHost) );
+	cutilSafeCall( cudaMemcpy(h_bucketSize, d_bucketSize, bucketCount * sizeof(unsigned int), cudaMemcpyDeviceToHost) );
 	
 	CheckCUDAError();
 	/*for(int j=0; j<bucketCount; j++){
@@ -302,40 +216,34 @@ void createHashTable(KEY_PTR d_keys,VALUE_PTR d_values, unsigned int length, KEY
 	VALUE_PTR d_bufferV;
 	
 
-//	unsigned int timer = 0;
-//	cutilCheckError(cutCreateTimer(&timer));
+	unsigned int timer = 0;
+	cutilCheckError(cutCreateTimer(&timer));
 	srand ( time(NULL) );
 	*bucketCount=(length /409)+1; //ceil
 	unsigned int dataSize=length*sizeof(unsigned int);
 	unsigned int bucketDataSize=*bucketCount*sizeof(unsigned int);
 
-	checkCudaErrors( cudaMalloc( (void**) &d_offset, dataSize));
+	cutilSafeCall( cudaMalloc( (void**) &d_offset, dataSize));
 	//allocate count 
-	checkCudaErrors( cudaMalloc( (void**) d_bucketSize, bucketDataSize));
+	cutilSafeCall( cudaMalloc( (void**) d_bucketSize, bucketDataSize));
 	
 	
 	//initialize offset to zero
-	checkCudaErrors( cudaMemset(d_offset,0,dataSize));
+	cutilSafeCall( cudaMemset(d_offset,0,dataSize));
 	//initialize count to zero
-	checkCudaErrors( cudaMemset(*d_bucketSize,0,bucketDataSize));
+	cutilSafeCall( cudaMemset(*d_bucketSize,0,bucketDataSize));
 	
 	
 	/**********Initiating Phase 1*********/
-//	cutilCheckError(cutStartTimer(timer));
-	StopWatchInterface *timer = NULL;
-	sdkCreateTimer(&timer);
-	sdkResetTimer(&timer);
-	sdkStartTimer(&timer);
-	
+	cutilCheckError(cutStartTimer(timer));
 	//launch phase 1 , bucket allocation
 	phase1<<<length/512+1,512>>>(d_keys,d_offset,length,*d_bucketSize,*bucketCount);
 	CheckCUDAError();
-//	cutilCheckError(cutStopTimer(timer));
-	sdkStopTimer(&timer);
+	cutilCheckError(cutStopTimer(timer));
 	/************  Calculating Start of each bucket (prefix sum of Count) **********/
 	//allocate and initiazlie start 
-	checkCudaErrors( cudaMalloc( (void**) &d_start, bucketDataSize));
-	checkCudaErrors( cudaMemset(d_start,0,bucketDataSize));
+	cutilSafeCall( cudaMalloc( (void**) &d_start, bucketDataSize));
+	cutilSafeCall( cudaMemset(d_start,0,bucketDataSize));
 
 	//find prefix sum 
 	CUDPPConfiguration config;
@@ -346,13 +254,11 @@ void createHashTable(KEY_PTR d_keys,VALUE_PTR d_values, unsigned int length, KEY
   
 	CUDPPHandle scanplan = 0;
     	CUDPPResult result = cudppPlan(&scanplan, config, *bucketCount, 1, 0);
-//	cutilCheckError(cutStartTimer(timer));
-	sdkStartTimer(&timer);
+	cutilCheckError(cutStartTimer(timer));
 	// Run the scan
     	cudppScan(scanplan, d_start, *d_bucketSize, *bucketCount);
     	CheckCUDAError();
-//	cutilCheckError(cutStopTimer(timer));
-	sdkStopTimer(&timer);
+	cutilCheckError(cutStopTimer(timer));
 	cudppDestroyPlan(scanplan);
 	
 
@@ -360,42 +266,40 @@ void createHashTable(KEY_PTR d_keys,VALUE_PTR d_values, unsigned int length, KEY
 
 	
 	//allocate buffer
-	checkCudaErrors( cudaMalloc( (void**) &d_bufferK, length*KEY_SIZE));
-	checkCudaErrors( cudaMalloc( (void**) &d_bufferV, length*VALUE_SIZE));
-//	cutilCheckError(cutStartTimer(timer));
-	sdkStartTimer(&timer);
+	cutilSafeCall( cudaMalloc( (void**) &d_bufferK, length*KEY_SIZE));
+	cutilSafeCall( cudaMalloc( (void**) &d_bufferV, length*VALUE_SIZE));
+	cutilCheckError(cutStartTimer(timer));
 	//copy to buckets
 	copyToBucket<<<length/512+1,512>>>(d_keys,d_values,d_offset,length,d_start,*bucketCount,d_bufferK,d_bufferV);
 	CheckCUDAError();
-//	cutilCheckError(cutStopTimer(timer));
+	cutilCheckError(cutStopTimer(timer));
 	
 	//verifyBuffer(d_keys,d_values,length,d_bufferK,d_bufferV,d_start,*d_bucketSize,*bucketCount);
 
 	
 	//free up some resources
-	checkCudaErrors(cudaFree(d_offset));
+	cutilSafeCall(cudaFree(d_offset));
 	
 	/***************     Cuckoo Hashing        ******************/
 	
-	checkCudaErrors( cudaMalloc( (void**) d_TK, (*bucketCount)*BUCKET_KEY_SIZE));
-	checkCudaErrors( cudaMalloc( (void**) d_TV, (*bucketCount)*BUCKET_VALUE_SIZE));
+	cutilSafeCall( cudaMalloc( (void**) d_TK, (*bucketCount)*BUCKET_KEY_SIZE));
+	cutilSafeCall( cudaMalloc( (void**) d_TV, (*bucketCount)*BUCKET_VALUE_SIZE));
 	bucketSort<<<*bucketCount,32>>>(d_bufferK,d_bufferV,d_start,*d_bucketSize,*bucketCount,*d_TK,*d_TV);
 	CheckCUDAError();
-//	cutilCheckError(cutStopTimer(timer));
-	sdkStopTimer(&timer);
+	cutilCheckError(cutStopTimer(timer));
 	cudaError_t err=cudaGetLastError();
 	if(cudaSuccess != err ){
 		printf("%s\n",cudaGetErrorString(err));
 	}
 	
 //	verifyBuffer(d_keys,d_values,length,d_bufferK,d_bufferV,d_start,*d_bucketSize,*bucketCount);
-	checkCudaErrors(cudaFree(d_start));
-	checkCudaErrors(cudaFree(d_bufferK));
-	checkCudaErrors(cudaFree(d_bufferV));
+	cutilSafeCall(cudaFree(d_start));
+	cutilSafeCall(cudaFree(d_bufferK));
+	cutilSafeCall(cudaFree(d_bufferV));
 	
 	*tableLength=*bucketCount*MAX_BUCKET_ITEM ;
 
 	DEBUG_CALL(verifyHashTable(d_keys,d_values,length,*d_TK,*d_TV,*tableLength,*d_bucketSize,*bucketCount));
-//	cutilCheckError(cutDeleteTimer(timer));
-	sdkDeleteTimer(&timer);	
+	cutilCheckError(cutDeleteTimer(timer));
+	
 }

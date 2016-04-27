@@ -1,15 +1,29 @@
 
+cimport cython
+cimport pygpuhash
+#from pygpuhash cimport createHashTable
 
-from pygpuhash cimport createHashTable
+#	createHashTable(d_kmerKeys, d_kmerValues, kmerCount, &d_TK, &d_TV,
+#			&tableLength, &d_bucketSeed, &bucketCount);
 
 
-def create_hash_table(KEY_T[::1] d_keys,
-                      VALUE_T[::1] d_values,
-                      unsigned int length,
-                      KEY_T[::1] * d_TK,
-                      VALUE_T[::1] * d_TV,
-                      unsigned int[::1] tableLength,
-                      unsigned int[::1] * d_bucketSize,
-                      unsigned int[::1] bucketCount):
-    return createHashTable(&d_keys[0], &d_values[0], length, &d_TK[0],
-                           &d_TV[0], &tableLength[0], d_bucketSize[0],&bucketCount[0])
+def create_hash_table(
+        KEY_T[::1] d_keys,
+        VALUE_T[::1] d_values,
+        unsigned int length):
+
+    cdef KEY_T *d_TK
+    cdef VALUE_T *d_TV
+    cdef unsigned int tableLength
+    cdef unsigned int *d_bucketSize
+    cdef unsigned int  bucketCount
+
+    return pygpuhash.createHashTable(
+        &d_keys[0],
+        &d_values[0],
+        length,
+        &d_TK,
+        &d_TV,
+        &tableLength,
+        &d_bucketSize,
+        &bucketCount)

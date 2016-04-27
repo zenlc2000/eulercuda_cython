@@ -54,7 +54,14 @@ typedef struct HASH_TABLE{
 #ifndef GPUHASH_IMPL
 
 //extern "C"
-void createHashTable(KEY_PTR d_keys,VALUE_PTR d_values, unsigned int length, KEY_PTR * d_TK,VALUE_PTR * d_TV,unsigned int * tableLength, unsigned int ** d_bucketSize,unsigned int * bucketCount);
+void createHashTable(KEY_PTR d_keys,
+    VALUE_PTR d_values,
+    unsigned int length,
+    KEY_PTR * d_TK,
+    VALUE_PTR * d_TV,
+    unsigned int * tableLength,
+    unsigned int ** d_bucketSize,
+    unsigned int * bucketCount);
 
 #endif//GPUHASH_IMPL
 

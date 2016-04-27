@@ -53,7 +53,8 @@ __global__ void computeKmerDevice( 	KEY_PTR lmers,
 				KEY_PTR pkmers,
 				KEY_PTR skmers,
 				KEY_T validBitMask
-			){
+			)
+{
 
 	const unsigned int tid=(blockDim.x*blockDim.y*gridDim.x*blockIdx.y) +(blockDim.x*blockDim.y*blockIdx.x)+(blockDim.x*threadIdx.y)+threadIdx.x;
 	KEY_T lmer;
@@ -91,3 +92,4 @@ __global__ void encodeLmerComplementDevice(	char  * buffer,
 	lmers[rOffset+tid]=lmer;
 
 }
+
