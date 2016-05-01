@@ -21,26 +21,23 @@ cdef extern from "graph.h":
    
    
     ctypedef struct EulerVertex:
-        KEY_T	vid
-        int  ep
-        int  ecount
-        int  lp
-        int  lcount
+        pass
+        # KEY_T	vid
+        # int  ep
+        # int  ecount
+        # int  lp
+        # int  lcount
        
    
     ctypedef struct EulerEdge:
-        KEY_T eid
-        int v1
-        int v2
-        int s
-        int pad
+        pass
+        # KEY_T eid
+        # int v1
+        # int v2
+        # int s
+        # int pad
    
-    ctypedef struct CircuitEdge:
-        int ceid
-        int e1
-        int e2
-        int c1
-        int c2
+
         
 cdef extern from "debruijn.h":
     void constructDebruijnGraphDevice(

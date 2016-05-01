@@ -72,7 +72,7 @@ debruijn_ext = Extension('pydebruijn',
                 # the implementation of this trick is in customize_compiler() below
                 extra_compile_args={'gcc': [],
                                     'nvcc': ['-arch=sm_30', '--ptxas-options=-v', '-c', '--compiler-options', "'-fPIC'"]},
-                include_dirs = [numpy_include, CUDA['include'], 'src'])
+                include_dirs = [numpy_include, CUDA['include'], 'src', '../include'])
 
 encoder_ext = Extension('pyencoder',
                 sources=["pyencoder.pyx", "encoder.cu","utils.cu"],
@@ -160,18 +160,18 @@ class custom_build_ext(build_ext):
         customize_compiler_for_nvcc(self.compiler)
         build_ext.build_extensions(self)
 
-# setup(name='pydebruijn',
-#       # random metadata. there's more you can supply
-#       author='Mike Busch',
-#       version='0.1',
-#
-#       ext_modules = [ext],
-#
-#       # inject our custom trigger
-#       cmdclass={'build_ext': custom_build_ext},
-#
-#       # since the package has c code, the egg cannot be zipped
-#       zip_safe=False)
+setup(name='pydebruijn',
+      # random metadata. there's more you can supply
+      author='Mike Busch',
+      version='0.1',
+
+      ext_modules = [debruijn_ext],
+
+      # inject our custom trigger
+      cmdclass={'build_ext': custom_build_ext},
+
+      # since the package has c code, the egg cannot be zipped
+      zip_safe=False)
 
 # setup(name='pyencoder',
 #       # random metadata. there's more you can supply
@@ -187,19 +187,20 @@ class custom_build_ext(build_ext):
 #       # since the package has c code, the egg cannot be zipped
 #       zip_safe=False)
 
-setup(name='pygpuhash',
-      # random metadata. there's more you can supply
-      author='Mike Busch',
-      version='0.1',
+# setup(name='pygpuhash',
+#       # random metadata. there's more you can supply
+#       author='Mike Busch',
+#       version='0.1',
+#
+#       # ext_modules=[debruijn_ext, encoder_ext, eulertour_ext],
+#       ext_modules=[gpuhash_ext],
+#
+#       # inject our custom trigger
+#       cmdclass={'build_ext': custom_build_ext},
+#
+#       # since the package has c code, the egg cannot be zipped
+#       zip_safe=False)
 
-      # ext_modules=[debruijn_ext, encoder_ext, eulertour_ext],
-      ext_modules=[gpuhash_ext],
-
-      # inject our custom trigger
-      cmdclass={'build_ext': custom_build_ext},
-
-      # since the package has c code, the egg cannot be zipped
-      zip_safe=False)
 # setup(name='pyeulertour',
 #       # random metadata. there's more you can supply
 #       author='Mike Busch',
